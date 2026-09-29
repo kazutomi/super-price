@@ -4,6 +4,7 @@
 
   const APP_ID = 'super-price-compare';
   const SCHEMA = 1;
+  const APP_VERSION = '2026092901';
   const TAX = { incl: 0, excl8: 0.08, excl10: 0.10 };
   const TAX_LABEL = { incl: '税込', excl8: '税抜8%', excl10: '税抜10%' };
   const WEIGHT = { g: 1, kg: 1000 };
@@ -431,6 +432,7 @@
   // ---------- 同期（書き出し・読み込み） ----------
   const syncDlg = $('#syncDlg');
   function renderSync() {
+    $('#appVersion').textContent = 'アプリのバージョン：' + APP_VERSION;
     $('#syncStats').textContent = `品名 ${alive(state.items).length}・店舗 ${alive(state.stores).length}・記録 ${alive(state.entries).length}`;
     $('#lastExport').textContent = meta.lastExport ? `この端末での最終書き出し：${fmtDateTime(meta.lastExport)}` : 'この端末ではまだ書き出していません';
   }
