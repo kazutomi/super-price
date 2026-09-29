@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f3ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1b18" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="価格比較">
+<title>スーパー価格比較</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 32 32" fill="none" aria-label="スーパー価格比較 ロゴ" role="img">
+      <path d="M5 7h3l3 13h13l3-9H10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M15 11v6M19 13v4M23 11v6" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="13" cy="25" r="2" fill="currentColor"/><circle cx="22" cy="25" r="2" fill="currentColor"/>
+    </svg>
+    <h1>スーパー価格比較</h1>
+  </div>
+  <nav class="header-actions">
+    <button type="button" class="btn ghost" id="btnStores">店舗</button>
+    <button type="button" class="btn ghost" id="btnSync">同期</button>
+  </nav>
+</header>
+
+<main>
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="品名・店名・製造元で検索" autocomplete="off" aria-label="検索">
+    <button type="button" class="btn primary" id="btnAddItem">＋ 品名</button>
+  </div>
+  <div id="list" aria-live="polite"></div>
+</main>
+
+<!-- 品名 追加・編集 -->
+<dialog id="itemDlg">
+  <form method="dialog" id="itemForm">
+    <h2 id="itemDlgTitle">品名を追加</h2>
+    <label class="field"><span>品名</span>
+      <input name="name" required placeholder="例：小麦粉" autocomplete="off">
+    </label>
+    <div class="dlg-actions">
+      <button type="button" class="btn danger ghost" id="itemDelete" hidden>削除</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" data-close>キャンセル</button>
+      <button type="submit" class="btn primary">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 価格の記録 -->
+<dialog id="entryDlg">
+  <form method="dialog" id="entryForm">
+    <h2 id="entryDlgTitle">価格を記録</h2>
+    <p class="dlg-sub" id="entryItemName"></p>
+    <label class="field"><span>スーパー</span>
+      <select name="storeId" required></select>
+    </label>
+    <label class="field"><span>製造元</span>
+      <input name="maker" placeholder="例：日清製粉" autocomplete="off" list="makerList">
+      <datalist id="makerList"></datalist>
+    </label>
+    <div class="row3">
+      <label class="field"><span>容量</span>
+        <input name="size" type="number" inputmode="decimal" step="any" min="0" required placeholder="1">
+      </label>
+      <label class="field"><span>単位</span>
+        <select name="unit">
+          <option>g</option><option>kg</option><option>ml</option><option>L</option>
+          <option>個</option><option>枚</option><option>本</option><option>袋</option>
+          <option>パック</option><option>玉</option><option>束</option><option>切れ</option><option>尾</option>
+        </select>
+      </label>
+      <label class="field"><span>入り数</span>
+        <input name="packs" type="number" inputmode="numeric" step="1" min="1" value="1" required>
+      </label>
+    </div>
+    <div class="row2">
+      <label class="field"><span>価格（円）</span>
+        <input name="price" type="number" inputmode="decimal" step="any" min="0" required placeholder="298">
+      </label>
+      <label class="field"><span>税</span>
+        <select name="tax">
+          <option value="incl">税込</option>
+          <option value="excl8">税抜（8%）</option>
+          <option value="excl10">税抜（10%）</option>
+        </select>
+      </label>
+    </div>
+    <label class="field"><span>確認日</span>
+      <input name="date" type="date" required>
+    </label>
+    <label class="field"><span>メモ</span>
+      <textarea name="memo" rows="2" placeholder="任意"></textarea>
+    </label>
+    <p class="preview" id="entryPreview"></p>
+    <div class="dlg-actions">
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" data-close>キャンセル</button>
+      <button type="submit" class="btn primary">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 商品詳細・履歴 -->
+<dialog id="productDlg">
+  <div class="dlg-body">
+    <h2 id="productTitle"></h2>
+    <p class="dlg-sub" id="productSub"></p>
+    <button type="button" class="btn primary block" id="productNew">この商品の新しい価格を記録</button>
+    <h3>履歴</h3>
+    <ul class="history" id="productHistory"></ul>
+    <div class="dlg-actions">
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" data-close>閉じる</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- 店舗管理 -->
+<dialog id="storesDlg">
+  <div class="dlg-body">
+    <h2>店舗</h2>
+    <p class="dlg-sub">支店を区別したいときは店名に含めてください（例：○○ストア 駅前店）。</p>
+    <ul class="store-list" id="storeList"></ul>
+    <form class="inline-add" id="storeAddForm">
+      <input name="name" placeholder="新しい店名" autocomplete="off" required>
+      <button type="submit" class="btn primary">追加</button>
+    </form>
+    <div class="dlg-actions">
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" data-close>閉じる</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- 同期 -->
+<dialog id="syncDlg">
+  <div class="dlg-body">
+    <h2>同期・バックアップ</h2>
+    <p class="dlg-sub">全データを1つのファイルに書き出し、もう一方の端末で読み込みます。このファイルはバックアップにもなります。</p>
+    <section class="sync-block">
+      <h3>書き出し</h3>
+      <p class="muted" id="syncStats"></p>
+      <button type="button" class="btn primary block" id="btnExport">全データを書き出す</button>
+      <p class="muted small" id="lastExport"></p>
+    </section>
+    <section class="sync-block">
+      <h3>読み込み</h3>
+      <fieldset class="radio-group">
+        <label><input type="radio" name="importMode" value="merge" checked> 統合（新しい方を残す）</label>
+        <label><input type="radio" name="importMode" value="replace"> 置き換え（この端末のデータを破棄）</label>
+      </fieldset>
+      <label class="btn ghost block file-btn">
+        ファイルを選んで読み込む
+        <input type="file" id="importFile" accept=".json,application/json">
+      </label>
+    </section>
+    <div class="dlg-actions">
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" data-close>閉じる</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
