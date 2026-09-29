@@ -57,6 +57,7 @@
   <form method="dialog" id="entryForm">
     <h2 id="entryDlgTitle">価格を記録</h2>
     <p class="dlg-sub" id="entryItemName"></p>
+    <p class="copy-note" id="copyNote" hidden>製造元・容量・入り数・税をコピーしました。スーパーと価格を入力してください。</p>
     <label class="field"><span>スーパー</span>
       <select name="storeId" required></select>
     </label>
@@ -112,6 +113,7 @@
     <h2 id="productTitle"></h2>
     <p class="dlg-sub" id="productSub"></p>
     <button type="button" class="btn primary block" id="productNew">この商品の新しい価格を記録</button>
+    <button type="button" class="btn ghost block" id="productCopy">コピーして別のスーパーで記録</button>
     <h3>履歴</h3>
     <ul class="history" id="productHistory"></ul>
     <div class="dlg-actions">

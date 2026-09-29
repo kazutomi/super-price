@@ -116,6 +116,16 @@ textarea { resize: vertical; }
 }
 .rows { list-style: none; margin: 0; padding: 0; }
 .rows li + li { border-top: 1px solid var(--border); }
+.row-wrap { display: flex; align-items: stretch; }
+.row-wrap .row { flex: 1; min-width: 0; }
+.row-wrap:has(.cheapest) { background: var(--accent-soft); }
+.copy-btn {
+  flex: none; width: 48px; border: none; border-left: 1px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center;
+}
+.copy-btn:hover { background: var(--surface-2); color: var(--accent); }
+.copy-btn:active { opacity: .7; }
+.copy-note { margin: -4px 0 0; font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); color: var(--text); }
 .row {
   display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center;
   width: 100%; text-align: left; padding: 10px 16px; background: transparent; border: none; cursor: pointer;

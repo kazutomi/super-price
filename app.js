@@ -157,12 +157,12 @@
           const cheapest = g.list.length > 1 && up <= min + 1e-9;
           const tp = taxedPrice(e);
           const priceText = e.tax === 'incl' ? `${yen(e.price)}（税込）` : `${yen(e.price)}（${TAX_LABEL[e.tax]}）→ ${yen(tp)}`;
-          body += `<li><button type="button" class="row${cheapest ? ' cheapest' : ''}" data-product="${esc(p.key)}">
+          body += `<li class="row-wrap"><button type="button" class="row${cheapest ? ' cheapest' : ''}" data-product="${esc(p.key)}">
             <div class="store">${esc(s ? s.name : '（不明）')}${cheapest ? '<span class="badge">最安</span>' : ''}${p.count > 1 ? `<span class="badge old">履歴${p.count}</span>` : ''}</div>
             <div class="right"><div class="unit-price">${yen1(up)}<small>${esc(d.suffix)}</small></div><div class="price">${esc(priceText)}</div></div>
             <div class="detail">${esc(e.maker || '製造元未記入')}・${esc(qtyText(e))}・${esc(fmtDate(e.date))}</div>
             ${e.memo ? `<div class="memo">${esc(e.memo)}</div>` : ''}
-          </button></li>`;
+          </button><button type="button" class="copy-btn" data-copy="${esc(p.key)}" aria-label="別のスーパーで記録（コピー）" title="別のスーパーで記録（コピー）"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg></button></li>`;
         }
         body += '</ul>';
       });
@@ -251,13 +251,24 @@
     $('#makerList').innerHTML = makers.map(m => `<option value="${esc(m)}">`).join('');
   }
   let lastStoreId = null;
-  function openEntry({ itemId, entryId, template }) {
+  // コピー時の既定店舗：同じ商品の記録がまだない店を優先
+  function suggestStoreForCopy(src) {
+    const stores = alive(state.stores).sort((a, b) => collator.compare(a.name, b.name));
+    const has = new Set(alive(state.entries).filter(e => productKey({ ...e, storeId: '' }) === productKey({ ...src, storeId: '' })).map(e => e.storeId));
+    const free = stores.find(s => !has.has(s.id));
+    return free ? free.id : (stores.find(s => s.id !== src.storeId) || stores[0] || {}).id;
+  }
+  function latestOfProduct(key) {
+    return alive(state.entries).filter(e => productKey(e) === key).sort((a, b) => (newer(a, b) ? -1 : 1))[0];
+  }
+  function openEntry({ itemId, entryId, template, copy }) {
     entryCtx = { itemId, entryId: entryId || null };
     const item = byId(state.items, itemId);
     const e = entryId ? byId(state.entries, entryId) : template;
-    $('#entryDlgTitle').textContent = entryId ? '記録を編集' : '価格を記録';
+    $('#entryDlgTitle').textContent = entryId ? '記録を編集' : copy ? '別のスーパーで記録' : '価格を記録';
     $('#entryItemName').textContent = item ? item.name : '';
-    fillStoreSelect(e ? e.storeId : lastStoreId);
+    $('#copyNote').hidden = !copy;
+    fillStoreSelect(copy ? suggestStoreForCopy(template) : e ? e.storeId : lastStoreId);
     fillMakerList(itemId);
     const f = entryForm;
     f.maker.value = e ? (e.maker || '') : '';
@@ -270,7 +281,7 @@
     f.memo.value = entryId && e ? (e.memo || '') : '';
     updatePreview();
     entryDlg.showModal();
-    setTimeout(() => (template ? f.price : (alive(state.stores).length ? f.maker : f.storeId)).focus(), 50);
+    setTimeout(() => (copy ? f.storeId : template ? f.price : (alive(state.stores).length ? f.maker : f.storeId)).focus(), 50);
   }
   entryForm.storeId.addEventListener('change', () => {
     const sel = entryForm.storeId;
@@ -324,6 +335,8 @@
     if (add) { openEntry({ itemId: add.dataset.addEntry }); return; }
     const ed = ev.target.closest('[data-edit-item]');
     if (ed) { openItem(ed.dataset.editItem); return; }
+    const cp = ev.target.closest('[data-copy]');
+    if (cp) { const src = latestOfProduct(cp.dataset.copy); if (src) openEntry({ itemId: src.itemId, template: src, copy: true }); return; }
     const row = ev.target.closest('[data-product]');
     if (row) openProduct(row.dataset.product);
   });
@@ -348,6 +361,10 @@
       <button type="button" class="btn small ghost danger" data-h-del="${esc(r.id)}">削除</button>
     </li>`).join('');
   }
+  $('#productCopy').addEventListener('click', () => {
+    const src = latestOfProduct(currentProductKey);
+    if (src) openEntry({ itemId: src.itemId, template: src, copy: true });
+  });
   $('#productNew').addEventListener('click', () => {
     const recs = alive(state.entries).filter(e => productKey(e) === currentProductKey).sort((a, b) => (newer(a, b) ? -1 : 1));
     if (recs[0]) openEntry({ itemId: recs[0].itemId, template: recs[0] });
