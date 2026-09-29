@@ -10,7 +10,7 @@
 <title>スーパー価格比較</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=2026092902">
+<link rel="stylesheet" href="style.css?v=2026092903">
 </head>
 <body>
 <header class="app-header">
@@ -58,7 +58,7 @@
   <form method="dialog" id="entryForm">
     <h2 id="entryDlgTitle">価格を記録</h2>
     <p class="dlg-sub" id="entryItemName"></p>
-    <p class="copy-note" id="copyNote" hidden>製造元・容量・入り数・税をコピーしました。スーパーと価格を入力してください。</p>
+    <p class="copy-note" id="copyNote" hidden>製造元・数量・入り数・税をコピーしました。スーパーと価格を入力してください。</p>
     <label class="field"><span>スーパー</span>
       <select name="storeId" required></select>
     </label>
@@ -67,7 +67,7 @@
       <datalist id="makerList"></datalist>
     </label>
     <div class="row3">
-      <label class="field"><span>容量</span>
+      <label class="field"><span>数量</span>
         <input name="size" type="number" inputmode="decimal" step="any" min="0" required placeholder="1">
       </label>
       <label class="field"><span>単位</span>
@@ -148,20 +148,21 @@
       <h3>単位を追加</h3>
       <div class="row2">
         <label class="field"><span>単位名</span>
-          <input name="name" placeholder="例：合、斤、缶" autocomplete="off" required>
+          <input name="name" placeholder="例：合、斤、缶、cm" autocomplete="off" required>
         </label>
         <label class="field"><span>種類</span>
           <select name="kind">
             <option value="c">数える単位</option>
             <option value="w">重さ（gに換算）</option>
             <option value="v">容量（mlに換算）</option>
+            <option value="l">長さ（mに換算）</option>
           </select>
         </label>
       </div>
       <label class="field" hidden><span>1単位あたりの量（<span id="factorUnit">g</span>）</span>
         <input name="factor" type="number" inputmode="decimal" step="any" min="0" placeholder="例：150">
       </label>
-      <p class="muted small">数える単位は、同じ単位どうしで「1単位あたり」の価格を比べます。重さ・容量にすると g や ml に換算して、他の商品と比べられます。</p>
+      <p class="muted small">数える単位は、同じ単位どうしで「1単位あたり」の価格を比べます。重さ・容量・長さにすると g・ml・m に換算して、他の商品と比べられます。</p>
       <button type="submit" class="btn primary block">追加</button>
     </form>
     <div class="dlg-actions">
@@ -203,6 +204,6 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="app.js?v=2026092902"></script>
+<script src="app.js?v=2026092903"></script>
 </body>
 </html>

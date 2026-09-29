@@ -4,14 +4,16 @@
 
   const APP_ID = 'super-price-compare';
   const SCHEMA = 1;
-  const APP_VERSION = '2026092902';
+  const APP_VERSION = '2026092903';
   const TAX = { incl: 0, excl8: 0.08, excl10: 0.10 };
   const TAX_LABEL = { incl: '税込', excl8: '税抜8%', excl10: '税抜10%' };
   const WEIGHT = { g: 1, kg: 1000 };
   const VOLUME = { ml: 1, L: 1000 };
+  const LENGTH = { m: 1 };
+  const BASE_UNIT = { w: 'g', v: 'ml', l: 'm' };
   const COUNT_UNITS = ['個', '枚', '本', '袋', 'パック', '玉', '束', '切れ', '尾'];
-  const BUILTIN_UNITS = [...Object.keys(WEIGHT), ...Object.keys(VOLUME), ...COUNT_UNITS];
-  const KIND_LABEL = { c: '数える単位', w: '重さ', v: '容量' };
+  const BUILTIN_UNITS = [...Object.keys(WEIGHT), ...Object.keys(VOLUME), ...Object.keys(LENGTH), ...COUNT_UNITS];
+  const KIND_LABEL = { c: '数える単位', w: '重さ', v: '容量', l: '長さ' };
 
   // ---------- 保存層 ----------
   const DB_NAME = 'super-price';
@@ -75,9 +77,12 @@
   // ---------- 計算 ----------
   function taxedPrice(e) { return e.price * (1 + (TAX[e.tax] || 0)); }
   function dimension(e) {
-    const cu = !BUILTIN_UNITS.includes(e.unit) && customUnit(e.unit);
+    // 旧版で独自登録された m は、削除済みの定義も含めて従来の意味を保つ。
+    const cu = (!BUILTIN_UNITS.includes(e.unit) || e.unit === 'm') && customUnit(e.unit);
     if (cu && cu.kind === 'w') return { key: 'w', label: '重さで比較（100gあたり）', base: 100, suffix: '/100g', total: e.size * cu.factor * e.packs };
     if (cu && cu.kind === 'v') return { key: 'v', label: '容量で比較（100mlあたり）', base: 100, suffix: '/100ml', total: e.size * cu.factor * e.packs };
+    if (cu && cu.kind === 'l') return { key: 'l', label: '長さで比較（1mあたり）', base: 1, suffix: '/m', total: e.size * cu.factor * e.packs };
+    if (!cu && e.unit in LENGTH) return { key: 'l', label: '長さで比較（1mあたり）', base: 1, suffix: '/m', total: e.size * LENGTH[e.unit] * e.packs };
     if (e.unit in WEIGHT) return { key: 'w', label: '重さで比較（100gあたり）', base: 100 * 1, suffix: '/100g', total: e.size * WEIGHT[e.unit] * e.packs };
     if (e.unit in VOLUME) return { key: 'v', label: '容量で比較（100mlあたり）', base: 100, suffix: '/100ml', total: e.size * VOLUME[e.unit] * e.packs };
     return { key: 'c:' + e.unit, label: `数で比較（1${e.unit}あたり）`, base: 1, suffix: '/' + e.unit, total: e.size * e.packs };
@@ -303,7 +308,7 @@
   function fillUnitSelect(selected) {
     const sel = entryForm.unit;
     const customs = alive(state.units).sort((a, b) => collator.compare(a.name, b.name)).map(u => u.name);
-    const opts = [...BUILTIN_UNITS, ...customs];
+    const opts = [...new Set([...BUILTIN_UNITS, ...customs])];
     if (selected && !opts.includes(selected)) opts.push(selected);
     sel.innerHTML = opts.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join('') + '<option value="__new">＋ 新しい単位を追加…</option>';
     sel.value = selected && opts.includes(selected) ? selected : 'g';
@@ -341,7 +346,7 @@
     ev.preventDefault();
     const v = readEntryForm();
     if (!v.storeId || v.storeId === '__new') { toast('スーパーを選んでください'); return; }
-    if (!(v.size > 0)) { toast('容量を入力してください'); return; }
+    if (!(v.size > 0)) { toast('数量を入力してください'); return; }
     if (isNaN(v.price) || v.price < 0) { toast('価格を入力してください'); return; }
     if (entryCtx.entryId) {
       Object.assign(byId(state.entries, entryCtx.entryId), v, { updatedAt: now() });
@@ -458,12 +463,12 @@
   function renderUnits() {
     $('#builtinUnits').textContent = BUILTIN_UNITS.join('・');
     $('#unitList').innerHTML = alive(state.units).sort((a, b) => collator.compare(a.name, b.name)).map(u => {
-      const conv = u.kind === 'c' ? '数える単位' : `1${u.name} = ${num(u.factor)}${u.kind === 'w' ? 'g' : 'ml'}`;
+      const conv = u.kind === 'c' ? '数える単位' : `1${u.name} = ${num(u.factor)}${BASE_UNIT[u.kind] || 'ml'}`;
       return `<li><span class="s-name">${esc(u.name)}<span class="s-count">　${esc(conv)}</span></span><span class="s-count">${usedCount(u.name)}件</span>
         <button type="button" class="btn small ghost danger" data-u-del="${esc(u.id)}">削除</button></li>`;
     }).join('');
     unitForm.factor.closest('.field').hidden = unitForm.kind.value === 'c';
-    $('#factorUnit').textContent = unitForm.kind.value === 'w' ? 'g' : 'ml';
+    $('#factorUnit').textContent = BASE_UNIT[unitForm.kind.value] || 'g';
   }
   function openUnits(fromEntry) {
     unitFromEntry = !!fromEntry;
