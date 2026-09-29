@@ -212,3 +212,11 @@ dialog h3 { margin: 6px 0 0; font-size: 15px; }
   .row3 { grid-template-columns: 1fr 1fr; }
   .row3 .field:first-child { grid-column: 1 / -1; }
 }
+
+.unit-list:empty::before { content: "まだ追加した単位はありません"; }
+.unit-form { padding: 12px !important; border: 1px solid var(--border); border-radius: 12px; gap: 10px !important; }
+.unit-form h3 { margin: 0; }
+.field[hidden] { display: none; }
+@media (max-width: 420px) {
+  .header-actions .btn { padding: 8px 10px; }
+}

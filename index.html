@@ -10,7 +10,7 @@
 <title>スーパー価格比較</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=2026092901">
+<link rel="stylesheet" href="style.css?v=2026092902">
 </head>
 <body>
 <header class="app-header">
@@ -24,6 +24,7 @@
   </div>
   <nav class="header-actions">
     <button type="button" class="btn ghost" id="btnStores">店舗</button>
+    <button type="button" class="btn ghost" id="btnUnits">単位</button>
     <button type="button" class="btn ghost" id="btnSync">同期</button>
   </nav>
 </header>
@@ -70,11 +71,7 @@
         <input name="size" type="number" inputmode="decimal" step="any" min="0" required placeholder="1">
       </label>
       <label class="field"><span>単位</span>
-        <select name="unit">
-          <option>g</option><option>kg</option><option>ml</option><option>L</option>
-          <option>個</option><option>枚</option><option>本</option><option>袋</option>
-          <option>パック</option><option>玉</option><option>束</option><option>切れ</option><option>尾</option>
-        </select>
+        <select name="unit"></select>
       </label>
       <label class="field"><span>入り数</span>
         <input name="packs" type="number" inputmode="numeric" step="1" min="1" value="1" required>
@@ -140,6 +137,40 @@
   </div>
 </dialog>
 
+<!-- 単位管理 -->
+<dialog id="unitsDlg">
+  <div class="dlg-body">
+    <h2>単位</h2>
+    <p class="dlg-sub">標準の単位：<span id="builtinUnits"></span></p>
+    <h3>追加した単位</h3>
+    <ul class="store-list unit-list" id="unitList"></ul>
+    <form class="unit-form" id="unitAddForm">
+      <h3>単位を追加</h3>
+      <div class="row2">
+        <label class="field"><span>単位名</span>
+          <input name="name" placeholder="例：合、斤、缶" autocomplete="off" required>
+        </label>
+        <label class="field"><span>種類</span>
+          <select name="kind">
+            <option value="c">数える単位</option>
+            <option value="w">重さ（gに換算）</option>
+            <option value="v">容量（mlに換算）</option>
+          </select>
+        </label>
+      </div>
+      <label class="field" hidden><span>1単位あたりの量（<span id="factorUnit">g</span>）</span>
+        <input name="factor" type="number" inputmode="decimal" step="any" min="0" placeholder="例：150">
+      </label>
+      <p class="muted small">数える単位は、同じ単位どうしで「1単位あたり」の価格を比べます。重さ・容量にすると g や ml に換算して、他の商品と比べられます。</p>
+      <button type="submit" class="btn primary block">追加</button>
+    </form>
+    <div class="dlg-actions">
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" data-close>閉じる</button>
+    </div>
+  </div>
+</dialog>
+
 <!-- 同期 -->
 <dialog id="syncDlg">
   <div class="dlg-body">
@@ -172,6 +203,6 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="app.js?v=2026092901"></script>
+<script src="app.js?v=2026092902"></script>
 </body>
 </html>

@@ -4,11 +4,14 @@
 
   const APP_ID = 'super-price-compare';
   const SCHEMA = 1;
-  const APP_VERSION = '2026092901';
+  const APP_VERSION = '2026092902';
   const TAX = { incl: 0, excl8: 0.08, excl10: 0.10 };
   const TAX_LABEL = { incl: '税込', excl8: '税抜8%', excl10: '税抜10%' };
   const WEIGHT = { g: 1, kg: 1000 };
   const VOLUME = { ml: 1, L: 1000 };
+  const COUNT_UNITS = ['個', '枚', '本', '袋', 'パック', '玉', '束', '切れ', '尾'];
+  const BUILTIN_UNITS = [...Object.keys(WEIGHT), ...Object.keys(VOLUME), ...COUNT_UNITS];
+  const KIND_LABEL = { c: '数える単位', w: '重さ', v: '容量' };
 
   // ---------- 保存層 ----------
   const DB_NAME = 'super-price';
@@ -49,7 +52,8 @@
   // ---------- 状態 ----------
   let state = emptyState();
   let meta = { lastExport: null };
-  function emptyState() { return { app: APP_ID, schema: SCHEMA, stores: [], items: [], entries: [] }; }
+  function emptyState() { return { app: APP_ID, schema: SCHEMA, stores: [], items: [], entries: [], units: [] }; }
+  const customUnit = (name) => alive(state.units || []).find(u => u.name === name) || (state.units || []).find(u => u.name === name);
   const save = () => idbSet('state', state);
   const now = () => Date.now();
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
@@ -71,6 +75,9 @@
   // ---------- 計算 ----------
   function taxedPrice(e) { return e.price * (1 + (TAX[e.tax] || 0)); }
   function dimension(e) {
+    const cu = !BUILTIN_UNITS.includes(e.unit) && customUnit(e.unit);
+    if (cu && cu.kind === 'w') return { key: 'w', label: '重さで比較（100gあたり）', base: 100, suffix: '/100g', total: e.size * cu.factor * e.packs };
+    if (cu && cu.kind === 'v') return { key: 'v', label: '容量で比較（100mlあたり）', base: 100, suffix: '/100ml', total: e.size * cu.factor * e.packs };
     if (e.unit in WEIGHT) return { key: 'w', label: '重さで比較（100gあたり）', base: 100 * 1, suffix: '/100g', total: e.size * WEIGHT[e.unit] * e.packs };
     if (e.unit in VOLUME) return { key: 'v', label: '容量で比較（100mlあたり）', base: 100, suffix: '/100ml', total: e.size * VOLUME[e.unit] * e.packs };
     return { key: 'c:' + e.unit, label: `数で比較（1${e.unit}あたり）`, base: 1, suffix: '/' + e.unit, total: e.size * e.packs };
@@ -274,7 +281,7 @@
     const f = entryForm;
     f.maker.value = e ? (e.maker || '') : '';
     f.size.value = e ? e.size : '';
-    f.unit.value = e ? e.unit : 'g';
+    fillUnitSelect(e ? e.unit : 'g');
     f.packs.value = e ? e.packs : 1;
     f.price.value = entryId && e ? e.price : '';
     f.tax.value = e ? e.tax : 'incl';
@@ -292,6 +299,21 @@
     let s = alive(state.stores).find(x => x.name === name);
     if (!s) { s = { id: uid(), name, updatedAt: now() }; state.stores.push(s); save(); }
     fillStoreSelect(s.id);
+  });
+  function fillUnitSelect(selected) {
+    const sel = entryForm.unit;
+    const customs = alive(state.units).sort((a, b) => collator.compare(a.name, b.name)).map(u => u.name);
+    const opts = [...BUILTIN_UNITS, ...customs];
+    if (selected && !opts.includes(selected)) opts.push(selected);
+    sel.innerHTML = opts.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join('') + '<option value="__new">＋ 新しい単位を追加…</option>';
+    sel.value = selected && opts.includes(selected) ? selected : 'g';
+    sel.dataset.prev = sel.value;
+  }
+  entryForm.unit.addEventListener('change', () => {
+    const sel = entryForm.unit;
+    if (sel.value !== '__new') { sel.dataset.prev = sel.value; return; }
+    sel.value = sel.dataset.prev || 'g';
+    openUnits(true);
   });
   function readEntryForm() {
     const f = entryForm;
@@ -429,11 +451,56 @@
     }
   });
 
+  // ---------- 単位 ----------
+  const unitsDlg = $('#unitsDlg'), unitForm = $('#unitAddForm');
+  let unitFromEntry = false;
+  function usedCount(name) { return alive(state.entries).filter(e => e.unit === name).length; }
+  function renderUnits() {
+    $('#builtinUnits').textContent = BUILTIN_UNITS.join('・');
+    $('#unitList').innerHTML = alive(state.units).sort((a, b) => collator.compare(a.name, b.name)).map(u => {
+      const conv = u.kind === 'c' ? '数える単位' : `1${u.name} = ${num(u.factor)}${u.kind === 'w' ? 'g' : 'ml'}`;
+      return `<li><span class="s-name">${esc(u.name)}<span class="s-count">　${esc(conv)}</span></span><span class="s-count">${usedCount(u.name)}件</span>
+        <button type="button" class="btn small ghost danger" data-u-del="${esc(u.id)}">削除</button></li>`;
+    }).join('');
+    unitForm.factor.closest('.field').hidden = unitForm.kind.value === 'c';
+    $('#factorUnit').textContent = unitForm.kind.value === 'w' ? 'g' : 'ml';
+  }
+  function openUnits(fromEntry) {
+    unitFromEntry = !!fromEntry;
+    unitForm.reset(); renderUnits(); unitsDlg.showModal();
+    if (fromEntry) setTimeout(() => unitForm.name.focus(), 50);
+  }
+  $('#btnUnits').addEventListener('click', () => openUnits(false));
+  unitForm.kind.addEventListener('change', renderUnits);
+  unitForm.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const name = unitForm.name.value.trim(), kind = unitForm.kind.value;
+    const factor = parseFloat(unitForm.factor.value);
+    if (!name) return;
+    if (BUILTIN_UNITS.includes(name) || alive(state.units).some(u => u.name === name)) { toast('同じ単位がすでにあります'); return; }
+    if (kind !== 'c' && !(factor > 0)) { toast('換算量を入力してください'); return; }
+    const old = (state.units || []).find(u => u.name === name); // 削除済みの同名は復活
+    if (old) Object.assign(old, { kind, factor: kind === 'c' ? 1 : factor, deleted: false, updatedAt: now() });
+    else state.units.push({ id: uid(), name, kind, factor: kind === 'c' ? 1 : factor, updatedAt: now() });
+    save(); render(); toast(`単位「${name}」を追加しました`);
+    if (unitFromEntry && entryDlg.open) { fillUnitSelect(name); unitsDlg.close(); updatePreview(); }
+    else { unitForm.reset(); renderUnits(); }
+  });
+  $('#unitList').addEventListener('click', (ev) => {
+    const del = ev.target.closest('[data-u-del]');
+    if (!del) return;
+    const u = byId(state.units, del.dataset.uDel);
+    const n = usedCount(u.name);
+    if (n) { alert(`「${u.name}」は ${n} 件の記録で使われているため削除できません。`); return; }
+    if (!confirm(`単位「${u.name}」を削除しますか？`)) return;
+    u.deleted = true; u.updatedAt = now(); save(); renderUnits();
+  });
+
   // ---------- 同期（書き出し・読み込み） ----------
   const syncDlg = $('#syncDlg');
   function renderSync() {
     $('#appVersion').textContent = 'アプリのバージョン：' + APP_VERSION;
-    $('#syncStats').textContent = `品名 ${alive(state.items).length}・店舗 ${alive(state.stores).length}・記録 ${alive(state.entries).length}`;
+    $('#syncStats').textContent = `品名 ${alive(state.items).length}・店舗 ${alive(state.stores).length}・単位 ${alive(state.units).length}・記録 ${alive(state.entries).length}`;
     $('#lastExport').textContent = meta.lastExport ? `この端末での最終書き出し：${fmtDateTime(meta.lastExport)}` : 'この端末ではまだ書き出していません';
   }
   $('#btnSync').addEventListener('click', () => { renderSync(); syncDlg.showModal(); });
@@ -470,7 +537,7 @@
   });
 
   function validImport(d) {
-    return d && typeof d === 'object' && d.app === APP_ID && Array.isArray(d.stores) && Array.isArray(d.items) && Array.isArray(d.entries);
+    return d && typeof d === 'object' && d.app === APP_ID && Array.isArray(d.stores) && Array.isArray(d.items) && Array.isArray(d.entries) && (d.units === undefined || Array.isArray(d.units));
   }
   function mergeArr(local, incoming) {
     const m = new Map(local.map(x => [x.id, x]));
@@ -493,14 +560,15 @@
       (data.exportedAt ? `\n書き出し日時：${fmtDateTime(data.exportedAt)}` : '');
     if (mode === 'replace') {
       if (!confirm(`この端末のデータをすべて置き換えます。\n\n読み込むファイル：\n${info}`)) return;
-      state = { app: APP_ID, schema: SCHEMA, stores: data.stores, items: data.items, entries: data.entries };
+      state = { app: APP_ID, schema: SCHEMA, stores: data.stores, items: data.items, entries: data.entries, units: data.units || [] };
       await save(); render(); renderSync(); toast('置き換えました');
     } else {
       if (!confirm(`統合します（同じデータは更新日時の新しい方を残します）。\n\n読み込むファイル：\n${info}`)) return;
       const s = mergeArr(state.stores, data.stores), i = mergeArr(state.items, data.items), e = mergeArr(state.entries, data.entries);
-      state.stores = s.arr; state.items = i.arr; state.entries = e.arr;
+      const u = mergeArr(state.units || [], data.units || []);
+      state.stores = s.arr; state.items = i.arr; state.entries = e.arr; state.units = u.arr;
       await save(); render(); renderSync();
-      toast(`統合しました（更新 ${s.changed + i.changed + e.changed} 件）`);
+      toast(`統合しました（更新 ${s.changed + i.changed + e.changed + u.changed} 件）`);
     }
   });
 
@@ -508,7 +576,7 @@
   qEl.addEventListener('input', render);
   (async () => {
     const s = await idbGet('state');
-    if (validImport(s)) state = s;
+    if (validImport(s)) { state = s; if (!Array.isArray(state.units)) state.units = []; }
     const m = await idbGet('meta');
     if (m) meta = m;
     render();
