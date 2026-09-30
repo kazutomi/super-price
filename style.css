@@ -9,6 +9,8 @@
   --accent-soft: #e2f0e6;
   --accent-text: #ffffff;
   --danger: #b3412e;
+  --sale-soft: #fff1f3;
+  --sale-text: #945461;
   --radius: 12px;
   --shadow: 0 1px 2px rgba(40, 35, 20, .06), 0 2px 8px rgba(40, 35, 20, .05);
   color-scheme: light dark;
@@ -26,6 +28,8 @@
     --accent-soft: #1f3a29;
     --accent-text: #0f1a13;
     --danger: #e27a66;
+    --sale-soft: #302426;
+    --sale-text: #d8a3ad;
     --shadow: none;
   }
 }
@@ -220,3 +224,9 @@ dialog h3 { margin: 6px 0 0; font-size: 15px; }
 @media (max-width: 420px) {
   .header-actions .btn { padding: 8px 10px; }
 }
+
+/* セールは淡いピンク。最安も兼ねる場合は緑の最安バッジを残す。 */
+.row-wrap.sale, .row.sale, .history li.sale { background: var(--sale-soft); }
+.badge.sale-badge { background: var(--sale-soft); color: var(--sale-text); border: 1px solid currentColor; }
+.sale-check { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+.sale-check input { width: 20px; height: 20px; margin: 0; flex: none; }

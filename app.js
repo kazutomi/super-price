@@ -4,7 +4,7 @@
 
   const APP_ID = 'super-price-compare';
   const SCHEMA = 1;
-  const APP_VERSION = '2026093001';
+  const APP_VERSION = '2026093002';
   const TAX = { incl: 0, excl8: 0.08, excl10: 0.10 };
   const TAX_LABEL = { incl: '税込', excl8: '税抜8%', excl10: '税抜10%' };
   const WEIGHT = { g: 1, kg: 1000 };
@@ -170,8 +170,8 @@
           const cheapest = g.list.length > 1 && up <= min + 1e-9;
           const tp = taxedPrice(e);
           const priceText = e.tax === 'incl' ? `${yen(e.price)}（税込）` : `${yen(e.price)}（${TAX_LABEL[e.tax]}）→ ${yen(tp)}`;
-          body += `<li class="row-wrap"><button type="button" class="row${cheapest ? ' cheapest' : ''}" data-product="${esc(p.key)}">
-            <div class="store">${esc(s ? s.name : '（不明）')}${cheapest ? '<span class="badge">最安</span>' : ''}${p.count > 1 ? `<span class="badge old">履歴${p.count}</span>` : ''}</div>
+          body += `<li class="row-wrap${e.sale === true ? ' sale' : ''}"><button type="button" class="row${cheapest ? ' cheapest' : ''}${e.sale === true ? ' sale' : ''}" data-product="${esc(p.key)}">
+            <div class="store">${esc(s ? s.name : '（不明）')}${cheapest ? '<span class="badge">最安</span>' : ''}${e.sale === true ? '<span class="badge sale-badge">セール</span>' : ''}${p.count > 1 ? `<span class="badge old">履歴${p.count}</span>` : ''}</div>
             <div class="right"><div class="unit-price">${yen1(up)}<small>${esc(d.suffix)}</small></div><div class="price">${esc(priceText)}</div></div>
             <div class="detail">${esc(e.maker || '製造元未記入')}・${esc(qtyText(e))}・${esc(fmtDate(e.date))}</div>
             ${e.memo ? `<div class="memo">${esc(e.memo)}</div>` : ''}
@@ -290,6 +290,7 @@
     f.packs.value = e ? e.packs : 1;
     f.price.value = entryId && e ? e.price : '';
     f.tax.value = e ? e.tax : 'incl';
+    f.sale.checked = !!(entryId && e && e.sale === true);
     f.date.value = entryId && e ? e.date : today();
     f.memo.value = entryId && e ? (e.memo || '') : '';
     updatePreview();
@@ -334,6 +335,7 @@
       packs: Math.max(1, parseInt(f.packs.value, 10) || 1),
       price: parseFloat(f.price.value),
       tax: f.tax.value,
+      sale: f.sale.checked,
       date: f.date.value || today(),
       memo: f.memo.value.trim(),
     };
@@ -385,8 +387,8 @@
     const item = byId(state.items, e.itemId), s = byId(state.stores, e.storeId);
     $('#productTitle').textContent = `${item ? item.name : ''}｜${s ? s.name : ''}`;
     $('#productSub').textContent = `${e.maker || '製造元未記入'}・${qtyText(e)}`;
-    $('#productHistory').innerHTML = recs.map(r => `<li>
-      <div class="h-main"><b>${yen(taxedPrice(r))}</b>${r.tax !== 'incl' ? `<span class="muted small">（${TAX_LABEL[r.tax]} ${yen(r.price)}）</span>` : ''}
+    $('#productHistory').innerHTML = recs.map(r => `<li${r.sale === true ? ' class="sale"' : ''}>
+      <div class="h-main"><b>${yen(taxedPrice(r))}</b>${r.sale === true ? '<span class="badge sale-badge">セール</span>' : ''}${r.tax !== 'incl' ? `<span class="muted small">（${TAX_LABEL[r.tax]} ${yen(r.price)}）</span>` : ''}
         ・${esc(fmtDate(r.date))}・${esc(yen1(unitPrice(r)) + dimension(r).suffix)}
         ${r.memo ? `<div class="h-memo">${esc(r.memo)}</div>` : ''}</div>
       <button type="button" class="btn small ghost" data-h-edit="${esc(r.id)}">編集</button>
