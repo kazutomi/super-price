@@ -4,7 +4,7 @@
 
   const APP_ID = 'super-price-compare';
   const SCHEMA = 1;
-  const APP_VERSION = '2026092903';
+  const APP_VERSION = '2026093001';
   const TAX = { incl: 0, excl8: 0.08, excl10: 0.10 };
   const TAX_LABEL = { incl: '税込', excl8: '税抜8%', excl10: '税抜10%' };
   const WEIGHT = { g: 1, kg: 1000 };
@@ -293,8 +293,12 @@
     f.date.value = entryId && e ? e.date : today();
     f.memo.value = entryId && e ? (e.memo || '') : '';
     updatePreview();
+    // 検索キーボードなどの入力状態を解除してから開く。
+    // 店舗 select への遅延 focus は行わず、見出しを初期フォーカスにする。
+    // 入力欄・選択欄はユーザーのタップで操作を開始できるようにする。
+    const active = document.activeElement;
+    if (active && typeof active.blur === 'function') active.blur();
     entryDlg.showModal();
-    setTimeout(() => (copy ? f.storeId : template ? f.price : (alive(state.stores).length ? f.maker : f.storeId)).focus(), 50);
   }
   entryForm.storeId.addEventListener('change', () => {
     const sel = entryForm.storeId;

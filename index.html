@@ -10,7 +10,7 @@
 <title>スーパー価格比較</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=2026092903">
+<link rel="stylesheet" href="style.css?v=2026093001">
 </head>
 <body>
 <header class="app-header">
@@ -54,9 +54,9 @@
 </dialog>
 
 <!-- 価格の記録 -->
-<dialog id="entryDlg">
+<dialog id="entryDlg" aria-labelledby="entryDlgTitle">
   <form method="dialog" id="entryForm">
-    <h2 id="entryDlgTitle">価格を記録</h2>
+    <h2 id="entryDlgTitle" tabindex="-1" autofocus>価格を記録</h2>
     <p class="dlg-sub" id="entryItemName"></p>
     <p class="copy-note" id="copyNote" hidden>製造元・数量・入り数・税をコピーしました。スーパーと価格を入力してください。</p>
     <label class="field"><span>スーパー</span>
@@ -204,6 +204,6 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="app.js?v=2026092903"></script>
+<script src="app.js?v=2026093001"></script>
 </body>
 </html>
