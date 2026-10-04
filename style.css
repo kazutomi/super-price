@@ -230,3 +230,19 @@ dialog h3 { margin: 6px 0 0; font-size: 15px; }
 .badge.sale-badge { background: var(--sale-soft); color: var(--sale-text); border: 1px solid currentColor; }
 .sale-check { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
 .sale-check input { width: 20px; height: 20px; margin: 0; flex: none; }
+
+/* タップでテキストを消す。検索欄の標準クリアボタンとの重複を防ぐ。 */
+.clearable { position: relative; display: block; min-width: 0; }
+.toolbar > .clearable { flex: 1; }
+.clearable > input, .clearable > textarea { padding-right: 48px; }
+.clearable > textarea { display: block; }
+.clear-input {
+  position: absolute; top: 0; right: 0; width: 44px; height: 44px;
+  padding: 0; border: 0; border-radius: 10px; background: transparent;
+  color: var(--muted); font: inherit; font-size: 23px; cursor: pointer;
+  display: grid; place-items: center; touch-action: manipulation;
+}
+.clear-input[hidden] { display: none; }
+.clear-input:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.clear-input:active { background: var(--surface-2); }
+.clearable > input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }

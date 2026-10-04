@@ -10,7 +10,7 @@
 <title>スーパー価格比較</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=2026093002">
+<link rel="stylesheet" href="style.css?v=2026100301">
 </head>
 <body>
 <header class="app-header">
@@ -31,7 +31,7 @@
 
 <main>
   <div class="toolbar">
-    <input type="search" id="q" placeholder="品名・店名・製造元で検索" autocomplete="off" aria-label="検索">
+    <span class="clearable"><input type="search" id="q" placeholder="品名・店名・製造元で検索" autocomplete="off" aria-label="検索"><button type="button" class="clear-input" aria-label="検索をクリア" title="検索をクリア" hidden>×</button></span>
     <button type="button" class="btn primary" id="btnAddItem">＋ 品名</button>
   </div>
   <div id="list" aria-live="polite"></div>
@@ -42,7 +42,7 @@
   <form method="dialog" id="itemForm">
     <h2 id="itemDlgTitle">品名を追加</h2>
     <label class="field"><span>品名</span>
-      <input name="name" required placeholder="例：小麦粉" autocomplete="off">
+      <span class="clearable"><input name="name" required placeholder="例：小麦粉" autocomplete="off"><button type="button" class="clear-input" aria-label="品名をクリア" title="品名をクリア" hidden>×</button></span>
     </label>
     <div class="dlg-actions">
       <button type="button" class="btn danger ghost" id="itemDelete" hidden>削除</button>
@@ -63,7 +63,7 @@
       <select name="storeId" required></select>
     </label>
     <label class="field"><span>製造元</span>
-      <input name="maker" placeholder="例：日清製粉" autocomplete="off" list="makerList">
+      <span class="clearable"><input name="maker" placeholder="例：日清製粉" autocomplete="off" list="makerList"><button type="button" class="clear-input" aria-label="製造元をクリア" title="製造元をクリア" hidden>×</button></span>
       <datalist id="makerList"></datalist>
     </label>
     <div class="row3">
@@ -94,7 +94,7 @@
       <input name="date" type="date" required>
     </label>
     <label class="field"><span>メモ</span>
-      <textarea name="memo" rows="2" placeholder="任意"></textarea>
+      <span class="clearable"><textarea name="memo" rows="2" placeholder="任意"></textarea><button type="button" class="clear-input" aria-label="メモをクリア" title="メモをクリア" hidden>×</button></span>
     </label>
     <p class="preview" id="entryPreview"></p>
     <div class="dlg-actions">
@@ -128,7 +128,7 @@
     <p class="dlg-sub">支店を区別したいときは店名に含めてください（例：○○ストア 駅前店）。</p>
     <ul class="store-list" id="storeList"></ul>
     <form class="inline-add" id="storeAddForm">
-      <input name="name" placeholder="新しい店名" autocomplete="off" required>
+      <span class="clearable"><input name="name" placeholder="新しい店名" autocomplete="off" required><button type="button" class="clear-input" aria-label="店舗名をクリア" title="店舗名をクリア" hidden>×</button></span>
       <button type="submit" class="btn primary">追加</button>
     </form>
     <div class="dlg-actions">
@@ -149,7 +149,7 @@
       <h3>単位を追加</h3>
       <div class="row2">
         <label class="field"><span>単位名</span>
-          <input name="name" placeholder="例：合、斤、缶、cm" autocomplete="off" required>
+          <span class="clearable"><input name="name" placeholder="例：合、斤、缶、cm" autocomplete="off" required><button type="button" class="clear-input" aria-label="単位名をクリア" title="単位名をクリア" hidden>×</button></span>
         </label>
         <label class="field"><span>種類</span>
           <select name="kind">
@@ -205,6 +205,6 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="app.js?v=2026093002"></script>
+<script src="app.js?v=2026100301"></script>
 </body>
 </html>

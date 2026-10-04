@@ -4,7 +4,7 @@
 
   const APP_ID = 'super-price-compare';
   const SCHEMA = 1;
-  const APP_VERSION = '2026093002';
+  const APP_VERSION = '2026100301';
   const TAX = { incl: 0, excl8: 0.08, excl10: 0.10 };
   const TAX_LABEL = { incl: '税込', excl8: '税抜8%', excl10: '税抜10%' };
   const WEIGHT = { g: 1, kg: 1000 };
@@ -198,6 +198,33 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
   }
 
+  // ---------- テキスト欄のクリア ----------
+  const clearFields = [...document.querySelectorAll('.clearable')].map(wrap => ({
+    input: wrap.querySelector('input, textarea'),
+    button: wrap.querySelector('.clear-input'),
+  }));
+  function refreshClearButtons() {
+    clearFields.forEach(({ input, button }) => { button.hidden = input.value === ''; });
+  }
+  clearFields.forEach(({ input, button }) => {
+    input.addEventListener('input', refreshClearButtons);
+    input.addEventListener('change', refreshClearButtons);
+    input.addEventListener('focus', refreshClearButtons);
+    // タップ時に入力欄からフォーカスを奪わず、キーボードを維持する。
+    button.addEventListener('pointerdown', ev => ev.preventDefault());
+    button.addEventListener('click', ev => {
+      ev.preventDefault();
+      input.value = '';
+      input.focus({ preventScroll: true });
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      refreshClearButtons();
+    });
+    // reset イベント時点ではまだ値が戻っていないため、その直後に更新する。
+    if (input.form) input.form.addEventListener('reset', () => queueMicrotask(refreshClearButtons));
+  });
+  refreshClearButtons();
+
   // ---------- ダイアログ共通 ----------
   document.querySelectorAll('dialog').forEach(d => {
     d.addEventListener('click', (ev) => {
@@ -218,6 +245,7 @@
     $('#itemDlgTitle').textContent = item ? '品名を編集' : '品名を追加';
     itemForm.name.value = item ? item.name : '';
     $('#itemDelete').hidden = !item;
+    refreshClearButtons();
     itemDlg.showModal();
     setTimeout(() => itemForm.name.focus(), 50);
   }
@@ -293,6 +321,7 @@
     f.sale.checked = !!(entryId && e && e.sale === true);
     f.date.value = entryId && e ? e.date : today();
     f.memo.value = entryId && e ? (e.memo || '') : '';
+    refreshClearButtons();
     updatePreview();
     // 検索キーボードなどの入力状態を解除してから開く。
     // 店舗 select への遅延 focus は行わず、見出しを初期フォーカスにする。
@@ -423,6 +452,7 @@
   // ---------- 店舗 ----------
   const storesDlg = $('#storesDlg');
   function renderStores() {
+    refreshClearButtons();
     const stores = alive(state.stores).sort((a, b) => collator.compare(a.name, b.name));
     $('#storeList').innerHTML = stores.map(s => {
       const n = alive(state.entries).filter(e => e.storeId === s.id).length;
@@ -467,6 +497,7 @@
   let unitFromEntry = false;
   function usedCount(name) { return alive(state.entries).filter(e => e.unit === name).length; }
   function renderUnits() {
+    refreshClearButtons();
     $('#builtinUnits').textContent = BUILTIN_UNITS.join('・');
     $('#unitList').innerHTML = alive(state.units).sort((a, b) => collator.compare(a.name, b.name)).map(u => {
       const conv = u.kind === 'c' ? '数える単位' : `1${u.name} = ${num(u.factor)}${BASE_UNIT[u.kind] || 'ml'}`;
