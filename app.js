@@ -4,7 +4,7 @@
 
   const APP_ID = 'super-price-compare';
   const SCHEMA = 1;
-  const APP_VERSION = '2026101001';
+  const APP_VERSION = '2026101002';
   const TAX = { incl: 0, excl8: 0.08, excl10: 0.10 };
   const TAX_LABEL = { incl: '税込', excl8: '税抜8%', excl10: '税抜10%' };
   const WEIGHT = { g: 1, kg: 1000 };
@@ -466,8 +466,7 @@
     const stores = alive(state.stores).sort((a, b) => collator.compare(a.name, b.name));
     $('#storeList').innerHTML = stores.map(s => {
       const n = alive(state.entries).filter(e => e.storeId === s.id).length;
-      return `<li><span class="s-name">${esc(s.name)}</span><span class="s-count">${n}件</span>
-        <button type="button" class="btn small ghost" data-s-products="${esc(s.id)}">商品一覧</button>
+      return `<li><button type="button" class="s-name store-name" data-s-products="${esc(s.id)}" aria-label="${esc(s.name)}の商品一覧" title="${esc(s.name)}の商品一覧">${esc(s.name)}</button><span class="s-count">${n}件</span>
         <button type="button" class="btn small ghost" data-s-rename="${esc(s.id)}">名前変更</button>
         <button type="button" class="btn small ghost danger" data-s-del="${esc(s.id)}">削除</button></li>`;
     }).join('');
