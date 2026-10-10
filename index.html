@@ -10,7 +10,7 @@
 <title>スーパー価格比較</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=2026100301">
+<link rel="stylesheet" href="style.css?v=2026101001">
 </head>
 <body>
 <header class="app-header">
@@ -33,6 +33,10 @@
   <div class="toolbar">
     <span class="clearable"><input type="search" id="q" placeholder="品名・店名・製造元で検索" autocomplete="off" aria-label="検索"><button type="button" class="clear-input" aria-label="検索をクリア" title="検索をクリア" hidden>×</button></span>
     <button type="button" class="btn primary" id="btnAddItem">＋ 品名</button>
+  </div>
+  <div id="storeFilter" class="store-filter" hidden>
+    <span id="storeFilterName"></span>
+    <button type="button" class="btn small ghost" id="clearStoreFilter">全店舗に戻る</button>
   </div>
   <div id="list" aria-live="polite"></div>
 </main>
@@ -205,6 +209,6 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="app.js?v=2026100301"></script>
+<script src="app.js?v=2026101001"></script>
 </body>
 </html>

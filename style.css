@@ -246,3 +246,9 @@ dialog h3 { margin: 6px 0 0; font-size: 15px; }
 .clear-input:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 .clear-input:active { background: var(--surface-2); }
 .clearable > input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+.store-filter { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; margin-bottom: 14px; background: var(--surface-2); border-radius: 10px; }
+.store-filter[hidden] { display: none; }
+#storeFilterName { min-width: 0; overflow-wrap: anywhere; }
+#storeList > li { flex-wrap: wrap; }
+#storeList .s-name { flex-basis: 50%; overflow-wrap: anywhere; }

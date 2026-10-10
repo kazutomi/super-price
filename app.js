@@ -4,7 +4,7 @@
 
   const APP_ID = 'super-price-compare';
   const SCHEMA = 1;
-  const APP_VERSION = '2026100301';
+  const APP_VERSION = '2026101001';
   const TAX = { incl: 0, excl8: 0.08, excl10: 0.10 };
   const TAX_LABEL = { incl: '税込', excl8: '税抜8%', excl10: '税抜10%' };
   const WEIGHT = { g: 1, kg: 1000 };
@@ -113,8 +113,14 @@
   const $ = (s) => document.querySelector(s);
   const listEl = $('#list');
   const qEl = $('#q');
+  let storeFilterId = null;
+  $('#clearStoreFilter').addEventListener('click', () => { storeFilterId = null; render(); });
 
   function render() {
+    const store = byId(state.stores, storeFilterId);
+    if (!store || store.deleted) storeFilterId = null;
+    $('#storeFilter').hidden = !storeFilterId;
+    $('#storeFilterName').textContent = storeFilterId ? `${store.name}の商品一覧` : '';
     const q = qEl.value.trim().toLowerCase();
     const items = alive(state.items).sort((a, b) => collator.compare(a.name, b.name));
     if (!items.length) {
@@ -124,7 +130,8 @@
     let html = '';
     let shown = 0;
     for (const item of items) {
-      const products = productsOf(item.id);
+      const products = productsOf(item.id).filter(p => !storeFilterId || p.latest.storeId === storeFilterId);
+      if (storeFilterId && !products.length) continue;
       if (q) {
         const hitItem = item.name.toLowerCase().includes(q);
         const hitSub = products.some(p => {
@@ -136,7 +143,7 @@
       shown++;
       html += renderCard(item, products);
     }
-    listEl.innerHTML = shown ? html : `<div class="empty"><strong>該当する品名がありません</strong>検索語を変えてみてください。</div>`;
+    listEl.innerHTML = shown ? html : `<div class="empty"><strong>該当する品名がありません</strong>${storeFilterId && !q ? 'この店舗には商品の記録がありません。' : '検索語を変えてみてください。'}</div>`;
   }
 
   function renderCard(item, products) {
@@ -259,6 +266,9 @@
       const it = byId(state.items, editingItemId); it.name = name; it.updatedAt = now();
     } else {
       state.items.push({ id: uid(), name, updatedAt: now() });
+      storeFilterId = null;
+      qEl.value = name;
+      refreshClearButtons();
     }
     save(); render(); itemDlg.close();
   });
@@ -457,6 +467,7 @@
     $('#storeList').innerHTML = stores.map(s => {
       const n = alive(state.entries).filter(e => e.storeId === s.id).length;
       return `<li><span class="s-name">${esc(s.name)}</span><span class="s-count">${n}件</span>
+        <button type="button" class="btn small ghost" data-s-products="${esc(s.id)}">商品一覧</button>
         <button type="button" class="btn small ghost" data-s-rename="${esc(s.id)}">名前変更</button>
         <button type="button" class="btn small ghost danger" data-s-del="${esc(s.id)}">削除</button></li>`;
     }).join('');
@@ -471,6 +482,16 @@
     f.reset(); save(); renderStores(); render();
   });
   $('#storeList').addEventListener('click', (ev) => {
+    const products = ev.target.closest('[data-s-products]');
+    if (products) {
+      storeFilterId = products.dataset.sProducts;
+      lastStoreId = storeFilterId;
+      qEl.value = '';
+      refreshClearButtons();
+      render();
+      storesDlg.close();
+      return;
+    }
     const rn = ev.target.closest('[data-s-rename]');
     if (rn) {
       const s = byId(state.stores, rn.dataset.sRename);
