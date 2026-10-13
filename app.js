@@ -4,7 +4,7 @@
 
   const APP_ID = 'super-price-compare';
   const SCHEMA = 1;
-  const APP_VERSION = '2026101301';
+  const APP_VERSION = '2026101302';
   const TAX = { incl: 0, excl8: 0.08, excl10: 0.10 };
   const TAX_LABEL = { incl: '税込', excl8: '税抜8%', excl10: '税抜10%' };
   const WEIGHT = { g: 1, kg: 1000 };
@@ -596,7 +596,7 @@
       try {
         const file = new File([blob], fname, { type: 'application/json' });
         if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: fname });
+          await navigator.share({ files: [file] });
           done = true;
         }
       } catch (err) {
