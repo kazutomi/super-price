@@ -4,7 +4,7 @@
 
   const APP_ID = 'super-price-compare';
   const SCHEMA = 1;
-  const APP_VERSION = '2026101002';
+  const APP_VERSION = '2026101301';
   const TAX = { incl: 0, excl8: 0.08, excl10: 0.10 };
   const TAX_LABEL = { incl: '税込', excl8: '税抜8%', excl10: '税抜10%' };
   const WEIGHT = { g: 1, kg: 1000 };
@@ -130,7 +130,8 @@
     let html = '';
     let shown = 0;
     for (const item of items) {
-      const products = productsOf(item.id).filter(p => !storeFilterId || p.latest.storeId === storeFilterId);
+      const allProducts = productsOf(item.id);
+      const products = allProducts.filter(p => !storeFilterId || p.latest.storeId === storeFilterId);
       if (storeFilterId && !products.length) continue;
       if (q) {
         const hitItem = item.name.toLowerCase().includes(q);
@@ -141,17 +142,17 @@
         if (!hitItem && !hitSub) continue;
       }
       shown++;
-      html += renderCard(item, products);
+      html += renderCard(item, products, allProducts, !!storeFilterId);
     }
     listEl.innerHTML = shown ? html : `<div class="empty"><strong>該当する品名がありません</strong>${storeFilterId && !q ? 'この店舗には商品の記録がありません。' : '検索語を変えてみてください。'}</div>`;
   }
 
-  function renderCard(item, products) {
+  function renderCard(item, products, allProducts = products, storeView = false) {
     // 比較軸ごとにグループ化
     const groups = new Map();
     for (const p of products) {
       const d = dimension(p.latest);
-      if (!groups.has(d.key)) groups.set(d.key, { label: d.label, list: [] });
+      if (!groups.has(d.key)) groups.set(d.key, { key: d.key, label: d.label, list: [] });
       groups.get(d.key).list.push(p);
     }
     const gs = [...groups.values()].sort((a, b) => b.list.length - a.list.length);
@@ -163,18 +164,19 @@
       gs.forEach((g, gi) => {
         g.list.sort((a, b) => unitPrice(a.latest) - unitPrice(b.latest));
         if (gs.length > 1) body += `<div class="dim-label">${esc(g.label)}</div>`;
-        const min = unitPrice(g.list[0].latest);
-        if (gi === 0) {
-          const s = byId(state.stores, g.list[0].latest.storeId);
-          bestText = `最安 ${esc(s ? s.name : '')}`;
-        }
+        const comparison = allProducts.filter(p => dimension(p.latest).key === g.key);
+        const min = Math.min(...comparison.map(p => unitPrice(p.latest)));
+        const bestStores = [...new Set(comparison.filter(p => unitPrice(p.latest) <= min + 1e-9)
+          .map(p => byId(state.stores, p.latest.storeId)?.name || '（不明）'))];
+        const best = `最安 ${bestStores.map(esc).join('・')}`;
+        bestText += (gi ? '<br>' : '') + (gs.length > 1 ? `${esc(g.label)}：` : '') + best;
         body += '<ul class="rows">';
         for (const p of g.list) {
           const e = p.latest;
           const s = byId(state.stores, e.storeId);
           const up = unitPrice(e);
           const d = dimension(e);
-          const cheapest = g.list.length > 1 && up <= min + 1e-9;
+          const cheapest = comparison.length > 1 && up <= min + 1e-9;
           const tp = taxedPrice(e);
           const priceText = e.tax === 'incl' ? `${yen(e.price)}（税込）` : `${yen(e.price)}（${TAX_LABEL[e.tax]}）→ ${yen(tp)}`;
           body += `<li class="row-wrap${e.sale === true ? ' sale' : ''}"><button type="button" class="row${cheapest ? ' cheapest' : ''}${e.sale === true ? ' sale' : ''}" data-product="${esc(p.key)}">
@@ -187,14 +189,14 @@
         body += '</ul>';
       });
     }
-    return `<article class="card">
+    return `<article class="card" id="item-${esc(item.id)}">
       <div class="card-head">
         <h2>${esc(item.name)}</h2>
         ${bestText ? `<span class="best">${bestText}</span>` : ''}
         <button type="button" class="icon-btn" data-edit-item="${esc(item.id)}" aria-label="${esc(item.name)} を編集">✎</button>
       </div>
       ${body}
-      <div class="card-foot"><button type="button" class="btn small primary" data-add-entry="${esc(item.id)}">＋ 価格を記録</button></div>
+      <div class="card-foot">${storeView ? `<button type="button" class="btn small ghost all-stores" data-all-stores="${esc(item.id)}">全店舗</button>` : ''}<button type="button" class="btn small primary" data-add-entry="${esc(item.id)}">＋ 価格を記録</button></div>
     </article>`;
   }
 
@@ -250,11 +252,13 @@
     editingItemId = id || null;
     const item = id ? byId(state.items, id) : null;
     $('#itemDlgTitle').textContent = item ? '品名を編集' : '品名を追加';
-    itemForm.name.value = item ? item.name : '';
+    itemForm.name.value = item ? item.name : qEl.value;
     $('#itemDelete').hidden = !item;
     refreshClearButtons();
     itemDlg.showModal();
-    setTimeout(() => itemForm.name.focus(), 50);
+    itemForm.name.focus({ preventScroll: true });
+    const end = itemForm.name.value.length;
+    itemForm.name.setSelectionRange(end, end);
   }
   itemForm.addEventListener('submit', (ev) => {
     ev.preventDefault();
@@ -404,6 +408,17 @@
     toast('保存しました');
   });
   listEl.addEventListener('click', (ev) => {
+    const allStores = ev.target.closest('[data-all-stores]');
+    if (allStores) {
+      const item = byId(state.items, allStores.dataset.allStores);
+      if (!item || item.deleted) return;
+      storeFilterId = null;
+      qEl.value = item.name;
+      refreshClearButtons();
+      render();
+      document.getElementById('item-' + item.id)?.scrollIntoView({ block: 'start' });
+      return;
+    }
     const add = ev.target.closest('[data-add-entry]');
     if (add) { openEntry({ itemId: add.dataset.addEntry }); return; }
     const ed = ev.target.closest('[data-edit-item]');

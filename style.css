@@ -259,3 +259,7 @@ dialog h3 { margin: 6px 0 0; font-size: 15px; }
 #storeList .store-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 #storeList .s-count, #storeList .btn { flex-shrink: 0; }
 
+
+.card-foot .all-stores { margin-right: auto; color: var(--muted); }
+.card { scroll-margin-top: 90px; }
+.card-head .best { white-space: normal; overflow-wrap: anywhere; }
